@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -14,13 +15,22 @@ const (
 	Shopping = iota
 	ViewCart
 	Checkout
+	List
 )
 
 type model struct {
-	recipes []string
-	cursor  int
-	cart    map[string]int
-	state   int
+	recipes     []string
+	cursor      int
+	cart        map[string]int
+	ingredients map[string]int
+	state       int
+}
+
+type IngredientData map[string]int
+
+type recipeData struct {
+	Description string         `json:"description"`
+	Ingredients IngredientData `json:"ingredients"`
 }
 
 func getRecipeNames() []string {
@@ -40,9 +50,10 @@ func getRecipeNames() []string {
 
 func initialModel() model {
 	return model{
-		recipes: getRecipeNames(),
-		cart:    make(map[string]int),
-		state:   Shopping,
+		recipes:     getRecipeNames(),
+		cart:        make(map[string]int),
+		state:       Shopping,
+		ingredients: make(map[string]int),
 	}
 }
 
@@ -55,7 +66,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c":
+		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "up", "k":
 			if m.cursor > 0 {
@@ -65,13 +76,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.recipes)-1 {
 				m.cursor++
 			}
-		case "enter", " ", "a":
-			_, ok := m.cart[m.recipes[m.cursor]]
-			if ok {
-				m.cart[m.recipes[m.cursor]]++
-			} else {
-				m.cart[m.recipes[m.cursor]] = 1
+		case " ", "a":
+			switch m.state {
+			case Shopping:
+				_, ok := m.cart[m.recipes[m.cursor]]
+				if ok {
+					m.cart[m.recipes[m.cursor]]++
+				} else {
+					m.cart[m.recipes[m.cursor]] = 1
+				}
 			}
+		case "enter":
+			switch m.state {
+			case Shopping:
+				_, ok := m.cart[m.recipes[m.cursor]]
+				if ok {
+					m.cart[m.recipes[m.cursor]]++
+				} else {
+					m.cart[m.recipes[m.cursor]] = 1
+				}
+			case Checkout:
+				for recipe, count := range m.cart {
+					addRecipeIngredients(m.ingredients, recipe, count)
+				}
+
+				m.state = List
+			}
+
 		case "backspace", "delete", "x":
 			_, ok := m.cart[m.recipes[m.cursor]]
 			if ok {
@@ -83,6 +114,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = ViewCart
 		case "s":
 			m.state = Shopping
+		case "g":
+			m.state = Checkout
 		}
 	}
 
@@ -121,13 +154,80 @@ func (m model) View() string {
 
 		// The footer
 		s += "\nPress p to print.\n"
+		s += "\nPress g to checkout.\n"
 		s += "\nPress q to quit.\n"
 
 		// Send the UI for rendering
 		return s
+	case Checkout:
+		s += "Your Cart\n\n"
+
+		for key, val := range m.cart {
+			s += fmt.Sprintf("%s %v\n", key, val)
+		}
+
+		s += "Ingredients debugging\n\n"
+		for key, val := range m.ingredients {
+			s += fmt.Sprintf("%s, %v\n", key, val)
+		}
+
+		// The footer
+		s += "\nPress Enter to create shopping list.\n"
+		s += "\nPress s to return to shopping.\n"
+		s += "\nPress q to quit.\n"
+
+		// Send the UI for rendering
+		return s
+	case List:
+		s += "To Buy This Week\n\n"
+
+		// Iterate over our choices
+		for key, val := range m.ingredients {
+			s += fmt.Sprintf("%s %v\n", key, val)
+		}
+
+		// The footer
+		s += "\nPress q to quit.\n"
+		return s
+
 	default:
 		return s
 	}
+}
+
+func addRecipeIngredients(ingredients map[string]int, recipeFile string, multiplier int) {
+	data, err := unmarshallRecipe(recipeFile + ".json")
+
+	if err != nil {
+		fmt.Println(err)
+		panic("Problem reading/unmarshalling recipe")
+	}
+
+	for ingredient, count := range data.Ingredients {
+		_, ok := ingredients[ingredient]
+		if ok {
+			ingredients[ingredient] += count * multiplier
+		} else {
+			ingredients[ingredient] = count * multiplier
+		}
+	}
+
+}
+
+func unmarshallRecipe(recipeFilename string) (*recipeData, error) {
+	data, err := os.ReadFile(recipeDirectory + "/" + recipeFilename)
+	if err != nil {
+		return nil, err
+	}
+
+	var obj recipeData
+
+	err = json.Unmarshal(data, &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &obj, nil
 }
 
 func main() {
