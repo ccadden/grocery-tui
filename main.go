@@ -18,19 +18,21 @@ const (
 	List
 )
 
-type model struct {
-	recipes     []string
-	cursor      int
-	cart        map[string]int
-	ingredients map[string]int
-	state       int
-}
+type IngredientData map[string]float32
 
-type IngredientData map[string]int
+type CartData map[string]int
 
 type recipeData struct {
 	Description string         `json:"description"`
 	Ingredients IngredientData `json:"ingredients"`
+}
+
+type model struct {
+	recipes     []string
+	cursor      int
+	cart        CartData
+	ingredients IngredientData
+	state       int
 }
 
 func getRecipeNames() []string {
@@ -53,7 +55,7 @@ func initialModel() model {
 		recipes:     getRecipeNames(),
 		cart:        make(map[string]int),
 		state:       Shopping,
-		ingredients: make(map[string]int),
+		ingredients: make(IngredientData),
 	}
 }
 
@@ -195,7 +197,7 @@ func (m model) View() string {
 	}
 }
 
-func addRecipeIngredients(ingredients map[string]int, recipeFile string, multiplier int) {
+func addRecipeIngredients(ingredients IngredientData, recipeFile string, multiplier int) {
 	data, err := unmarshallRecipe(recipeFile + ".json")
 
 	if err != nil {
@@ -206,9 +208,9 @@ func addRecipeIngredients(ingredients map[string]int, recipeFile string, multipl
 	for ingredient, count := range data.Ingredients {
 		_, ok := ingredients[ingredient]
 		if ok {
-			ingredients[ingredient] += count * multiplier
+			ingredients[ingredient] += count * float32(multiplier)
 		} else {
-			ingredients[ingredient] = count * multiplier
+			ingredients[ingredient] = count * float32(multiplier)
 		}
 	}
 
