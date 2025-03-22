@@ -153,5 +153,4 @@ func (m *model) buildInstructionFooter() string {
 	}
 
 	return ""
-
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func getRecipeNames() []string {
-	entries, err := os.ReadDir(defaultRecipeDirectory)
+	entries, err := os.ReadDir(*recipeDirectory)
 	if err != nil {
 		os.Exit(1)
 	}
@@ -42,7 +42,7 @@ func addRecipeIngredients(ingredients IngredientData, recipeFile string, multipl
 }
 
 func unmarshallRecipe(recipeFilename string) (*recipeData, error) {
-	data, err := os.ReadFile(defaultRecipeDirectory + "/" + recipeFilename)
+	data, err := os.ReadFile(*recipeDirectory + "/" + recipeFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -55,20 +55,6 @@ func unmarshallRecipe(recipeFilename string) (*recipeData, error) {
 	}
 
 	return &obj, nil
-}
-
-func setRecipeDirectory() {
-	if recipeDirectory != "" {
-		return
-	}
-
-	if userRecipeDirectory != "" {
-		recipeDirectory = userRecipeDirectory
-		return
-	}
-
-	recipeDirectory = defaultRecipeDirectory
-
 }
 
 func makePageHeader(text string) string {
