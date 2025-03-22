@@ -69,3 +69,15 @@ func makePageHeader(text string) string {
 
 	return b.String()
 }
+
+func defaultRecipeDirectory() string {
+	recipeDirectory := os.Getenv("RECIPE_DIRECTORY")
+
+	if recipeDirectory != "" {
+		if _, err := os.Stat(recipeDirectory); !os.IsNotExist(err) {
+			return recipeDirectory
+		}
+	}
+
+	return "./recipes"
+}

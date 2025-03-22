@@ -1,7 +1,5 @@
 package main
 
-const defaultRecipeDirectory string = "./recipes"
-
 const (
 	Shopping = iota
 	ViewCart

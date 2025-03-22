@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-var recipeDirectory = flag.String("r", defaultRecipeDirectory, "path to directory containing recipes as JSON")
+var recipeDirectory = flag.String("r", defaultRecipeDirectory(), "path to directory containing recipes as JSON")
 
 func main() {
 	flag.Parse()
