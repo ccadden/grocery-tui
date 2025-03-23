@@ -27,12 +27,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q", "esc":
 			return m, tea.Quit
 		case "up", "k":
-			if m.cursor > 0 {
-				m.cursor--
+			if m.state == Shopping {
+				if m.cursor > 0 {
+					m.cursor--
+				}
 			}
 		case "down", "j":
-			if m.cursor < len(m.recipes)-1 {
-				m.cursor++
+			if m.state == Shopping {
+				if m.cursor < len(m.recipes)-1 {
+					m.cursor++
+				}
 			}
 		case " ", "a":
 			switch m.state {
@@ -62,11 +66,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "backspace", "delete", "x":
-			_, ok := m.cart[m.recipes[m.cursor]]
-			if ok {
-				m.cart[m.recipes[m.cursor]]--
-			} else {
-				m.cart[m.recipes[m.cursor]] = 0
+			if m.state == Shopping {
+				_, ok := m.cart[m.recipes[m.cursor]]
+				if ok {
+					m.cart[m.recipes[m.cursor]]--
+				} else {
+					m.cart[m.recipes[m.cursor]] = 0
+				}
 			}
 		case "p":
 			m.state = ViewCart
